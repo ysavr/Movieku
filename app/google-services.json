@@ -1,0 +1,59 @@
+{
+  "project_info": {
+    "project_number": "912019694006",
+    "firebase_url": "https://movieku-10025.firebaseio.com",
+    "project_id": "movieku-10025",
+    "storage_bucket": "movieku-10025.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:912019694006:android:83e48ba0bca980ec",
+        "android_client_info": {
+          "package_name": "com.mythcon.savr.movieku"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "912019694006-6l4eslsv1itg09sf60q6d390kkll4l2u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mythcon.savr.movieku",
+            "certificate_hash": "41ede4b350092bb21d141b6c4cae206b4b9d898c"
+          }
+        },
+        {
+          "client_id": "912019694006-ft566efogu59l5ji5d88efhb673lt9ci.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "912019694006-ft566efogu59l5ji5d88efhb673lt9ci.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBg3yXVm4UQ9vuG6FDt2i9pLOTFOAayTuI"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "912019694006-ft566efogu59l5ji5d88efhb673lt9ci.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
