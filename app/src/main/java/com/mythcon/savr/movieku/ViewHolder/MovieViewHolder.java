@@ -3,6 +3,7 @@ package com.mythcon.savr.movieku.ViewHolder;
 import android.support.v7.widget.RecyclerView;
 import android.view.ContextMenu;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.mythcon.savr.movieku.Interface.ItemClickListener;
@@ -13,10 +14,12 @@ public class MovieViewHolder extends RecyclerView.ViewHolder
 
     private ItemClickListener itemClickListener;
     public TextView movie_name_text;
+    public ImageView movie_image;
     public MovieViewHolder(View itemView) {
         super(itemView);
 
         movie_name_text = itemView.findViewById(R.id.movie_name);
+        movie_image = itemView.findViewById(R.id.movie_image);
         itemView.setOnClickListener(this);
         itemView.setOnCreateContextMenuListener(this);
     }

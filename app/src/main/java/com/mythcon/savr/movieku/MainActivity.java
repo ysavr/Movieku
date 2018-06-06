@@ -1,7 +1,11 @@
 package com.mythcon.savr.movieku;
 
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -18,14 +22,23 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.mythcon.savr.movieku.Interface.ItemClickListener;
 import com.mythcon.savr.movieku.Model.Movie;
 import com.mythcon.savr.movieku.ViewHolder.MovieViewHolder;
 import com.rengwuxian.materialedittext.MaterialEditText;
+import com.squareup.picasso.Picasso;
+
+import java.util.UUID;
 
 import info.hoang8f.widget.FButton;
 
@@ -44,6 +57,9 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerMovie;
     RecyclerView.LayoutManager layoutManager;
 
+    public static final int PICT_IMAGE_REQUEST = 71;
+    Uri saveUri;
+
     Movie newMovie;
 
     @Override
@@ -55,6 +71,8 @@ public class MainActivity extends AppCompatActivity {
 
         database = FirebaseDatabase.getInstance();
         movie = database.getReference("Movie");
+        storage = FirebaseStorage.getInstance();
+        storageReference = storage.getReference();
 
         rootLayout = findViewById(R.id.rootLayout);
         recyclerMovie = findViewById(R.id.recycler_movie);
@@ -80,6 +98,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             protected void populateViewHolder(MovieViewHolder viewHolder, final Movie model, int position) {
                 viewHolder.movie_name_text.setText(model.getName());
+                Picasso.with(getBaseContext())
+                        .load(model.getImage())
+                        .into(viewHolder.movie_image);
 
                 viewHolder.setItemClickListener(new ItemClickListener() {
                     @Override
@@ -106,6 +127,23 @@ public class MainActivity extends AppCompatActivity {
         edtRate = add_new_movie_layout.findViewById(R.id.edtRate);
         edtGenre = add_new_movie_layout.findViewById(R.id.edtGenre);
 
+        btnSelect = add_new_movie_layout.findViewById(R.id.btn_select);
+        btnUpload = add_new_movie_layout.findViewById(R.id.btn_upload);
+
+        btnSelect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                selectImage();
+            }
+        });
+
+        btnUpload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                uploadImage();
+            }
+        });
+
         alertDialog.setPositiveButton("YES", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -114,7 +152,8 @@ public class MainActivity extends AppCompatActivity {
                             edtMovieName.getText().toString(),
                             edtDescription.getText().toString(),
                             edtRate.getText().toString(),
-                            edtGenre.getText().toString());
+                            edtGenre.getText().toString(),
+                            saveUri.toString());
                     movie.push().setValue(newMovie);
                     Snackbar.make(rootLayout,"Film "+newMovie.getName()+" berhasil ditambahkan",Snackbar.LENGTH_SHORT).show();
                 }else {
@@ -134,6 +173,66 @@ public class MainActivity extends AppCompatActivity {
 
         alertDialog.setView(add_new_movie_layout);
         alertDialog.show();
+    }
+
+    private void uploadImage() {
+        if (saveUri != null){
+            final ProgressDialog progressDialog = new ProgressDialog(this);
+            progressDialog.setMessage("Uploading...");
+            progressDialog.show();
+
+            String imageName = UUID.randomUUID().toString();
+            final StorageReference imageFolder = storageReference.child("images/"+imageName);
+            imageFolder.putFile(saveUri)
+                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            progressDialog.dismiss();
+                            Toast.makeText(MainActivity.this, "Uploaded !!!", Toast.LENGTH_SHORT).show();
+                            imageFolder.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                @Override
+                                public void onSuccess(Uri uri) {
+                                    newMovie = new Movie();
+                                    newMovie.setName(edtMovieName.getText().toString());
+                                    newMovie.setDescription(edtDescription.getText().toString());
+                                    newMovie.setRate(edtRate.getText().toString());
+                                    newMovie.setGenre(edtGenre.getText().toString());
+                                    newMovie.setImage(uri.toString());
+                                }
+                            });
+                        }
+                    }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    progressDialog.dismiss();
+                    Toast.makeText(MainActivity.this, ""+e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }).addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                    double progress = (100.0 *taskSnapshot.getBytesTransferred() / taskSnapshot.getTotalByteCount());
+                    progressDialog.setMessage("Uploaded "+progress+"%");
+                }
+            });
+        }
+    }
+
+    private void selectImage() {
+        Intent intent = new Intent();
+        intent.setType("image/*");
+        intent.setAction(intent.ACTION_GET_CONTENT);
+        startActivityForResult(Intent.createChooser(intent,"Select picture"),PICT_IMAGE_REQUEST);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == PICT_IMAGE_REQUEST && resultCode == RESULT_OK &&
+                data != null && data.getData() != null){
+            saveUri = data.getData();
+            btnSelect.setText("Image Selected!!");
+        }
     }
 
     @Override
@@ -183,6 +282,23 @@ public class MainActivity extends AppCompatActivity {
         edtRate = add_new_movie_layout.findViewById(R.id.edtRate);
         edtGenre = add_new_movie_layout.findViewById(R.id.edtGenre);
 
+        btnSelect = add_new_movie_layout.findViewById(R.id.btn_select);
+        btnUpload = add_new_movie_layout.findViewById(R.id.btn_upload);
+
+        btnSelect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                selectImage();
+            }
+        });
+
+        btnUpload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                changeImage(item);
+            }
+        });
+
         edtMovieName.setText(item.getName());
         edtDescription.setText(item.getDescription());
         edtRate.setText(item.getRate());
@@ -210,6 +326,43 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         alertDialog.show();
+    }
+
+    private void changeImage(final Movie item) {
+        if (saveUri != null){
+            final ProgressDialog progressDialog = new ProgressDialog(this);
+            progressDialog.setMessage("Uploading...");
+            progressDialog.show();
+
+            String imageName = UUID.randomUUID().toString();
+            final StorageReference imagefolder = storageReference.child("images/"+imageName);
+            imagefolder.putFile(saveUri)
+                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            progressDialog.dismiss();
+                            Toast.makeText(MainActivity.this, "Uploaded !!!", Toast.LENGTH_SHORT).show();
+                            imagefolder.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                @Override
+                                public void onSuccess(Uri uri) {
+                                    item.setImage(uri.toString());
+                                }
+                            });
+                        }
+                    }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    progressDialog.dismiss();
+                    Toast.makeText(MainActivity.this, ""+e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }).addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                    double progress = (100.0 *taskSnapshot.getBytesTransferred() / taskSnapshot.getTotalByteCount());
+                    progressDialog.setMessage("Uploaded "+progress+"%");
+                }
+            });
+        }
     }
 
     @Override
